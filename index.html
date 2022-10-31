@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Canvas1</title>
+    <style>
+      canvas {
+        border: 1px solid red;
+        position: absolute;
+      }
+      button {
+        position: relative;
+        top: 270px;
+        padding: 10px;
+        border: 1px solid rgb(195, 10, 10);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="myCanvas2" height="250" width="250"></canvas>
+    <canvas id="myCanvas" height="250" width="250"></canvas>
+
+    <button id="button">Collapse lines</button>
+
+    <script>
+      // Fields
+
+      let c, ctx, c2, ctx2, btn, fromXY, toXY;
+      let linesArray = [];
+      let intersectionsArray = [];
+
+      // Classes
+
+      class Page {
+        constructor(canvas1, canvas2, context1, context2) {
+          this.canvas1 = canvas1;
+          this.canvas2 = canvas2;
+
+          this.context1 = context1;
+          this.context2 = context2;
+
+          this.linesArray = [];
+          this.intersectionsArray = [];
+
+          this.currentLine = {};
+        }
+
+        saveFinishedLine() {
+          linesArray.push(new Line(fromXY.x, fromXY.y, toXY.x, toXY.y));
+
+          context2.beginPath();
+          context2.moveTo(fromXY.x, fromXY.y);
+          context2.lineTo(toXY.x, toXY.y);
+          context2.strokeStyle = "black";
+          context2.stroke();
+          context2.closePath();
+        }
+      }
+
+      class Line {
+        constructor(fromX, fromY, toX, toY) {
+          this.fromX = fromX;
+          this.fromY = fromY;
+          this.toX = toX;
+          this.toY = toY;
+        }
+
+        draw(context) {
+          context.beginPath();
+          context.moveTo(this.fromX, this.fromY);
+          context.lineTo(this.toX, this.toY);
+          context.strokeStyle = "black";
+          context.stroke();
+          context.closePath();
+        }
+      }
+
+      var Point = function (valA, valB) {
+        this.x = valA;
+        this.y = valB;
+      };
+
+      window.onload = function () {
+        document.onclick = clickHandler;
+        document.onmousemove = moveHandler;
+        document.oncontextmenu = abortHandler;
+
+        c = document.getElementById("myCanvas");
+        ctx = c.getContext("2d");
+
+        c2 = document.getElementById("myCanvas2");
+        ctx2 = c2.getContext("2d");
+
+        btn = document.getElementById("button");
+        btn.addEventListener("click", function (evt) {
+          animate(1);
+        });
+
+        reset();
+      };
+
+      function saveFinishedLine() {
+        linesArray.push(new Line(fromXY.x, fromXY.y, toXY.x, toXY.y));
+
+        ctx2.beginPath();
+        ctx2.moveTo(fromXY.x, fromXY.y);
+        ctx2.lineTo(toXY.x, toXY.y);
+        ctx2.strokeStyle = "black";
+        ctx2.stroke();
+        ctx2.closePath();
+      }
+
+      function drawIntersectionAt(point) {
+        if (point != null) {
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+          ctx.fillStyle = "red";
+          ctx.fill();
+          ctx.closePath();
+        }
+      }
+
+      function findIntersections() {
+        for (var i = 0; i < linesArray.length; i++) {
+          var point = lineIntersection(
+            new Point(linesArray[i].fromX, linesArray[i].fromY),
+            new Point(linesArray[i].toX, linesArray[i].toY),
+            new Point(fromXY.x, fromXY.y),
+            new Point(toXY.x, toXY.y)
+          );
+
+          drawIntersectionAt(point);
+
+          // console.log(point);
+        }
+      }
+
+      function saveIntersections() {
+        for (var i = 0; i < linesArray.length; i++) {
+          var point = lineIntersection(
+            new Point(linesArray[i].fromX, linesArray[i].fromY),
+            new Point(linesArray[i].toX, linesArray[i].toY),
+            new Point(fromXY.x, fromXY.y),
+            new Point(toXY.x, toXY.y)
+          );
+
+          if (point != null) {
+            intersectionsArray.push(point);
+
+            ctx2.beginPath();
+            ctx2.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+            ctx2.strokeStyle = "red";
+            ctx2.stroke();
+            ctx2.closePath();
+          }
+
+          console.log(point);
+        }
+      }
+
+      function lineIntersection(pointA, pointB, pointC, pointD) {
+        var z1 = pointA.x - pointB.x;
+        var z2 = pointC.x - pointD.x;
+        var z3 = pointA.y - pointB.y;
+        var z4 = pointC.y - pointD.y;
+        var dist = z1 * z4 - z3 * z2;
+        if (dist == 0) {
+          return null;
+        }
+        var tempA = pointA.x * pointB.y - pointA.y * pointB.x;
+        var tempB = pointC.x * pointD.y - pointC.y * pointD.x;
+        var xCoor = (tempA * z2 - z1 * tempB) / dist;
+        var yCoor = (tempA * z4 - z3 * tempB) / dist;
+
+        if (
+          xCoor < Math.min(pointA.x, pointB.x) ||
+          xCoor > Math.max(pointA.x, pointB.x) ||
+          xCoor < Math.min(pointC.x, pointD.x) ||
+          xCoor > Math.max(pointC.x, pointD.x)
+        ) {
+          return null;
+        }
+        if (
+          yCoor < Math.min(pointA.y, pointB.y) ||
+          yCoor > Math.max(pointA.y, pointB.y) ||
+          yCoor < Math.min(pointC.y, pointD.y) ||
+          yCoor > Math.max(pointC.y, pointD.y)
+        ) {
+          return null;
+        }
+
+        return new Point(xCoor, yCoor);
+      }
+
+      function clear() {
+        let artefacts = 10;
+        // Небольшая оптимизация. Чистим только площадь линии + 10px по бокам, дабы избежать артефактов
+        ctx.clearRect(
+          fromXY.x <= toXY.x ? fromXY.x - artefacts : toXY.x - artefacts,
+          fromXY.y <= toXY.y ? fromXY.y - artefacts : toXY.y - artefacts,
+          Math.abs(toXY.x - fromXY.x) + artefacts * 2,
+          Math.abs(toXY.y - fromXY.y) + artefacts * 2
+        );
+      }
+
+      function reset() {
+        fromXY = {};
+        toXY = {};
+      }
+
+      function moveHandler(e) {
+        if (typeof fromXY.x !== "undefined") {
+          clear();
+          toXY.x = e.clientX;
+          toXY.y = e.clientY;
+
+          findIntersections();
+
+          const newLine = new Line(fromXY.x, fromXY.y, toXY.x, toXY.y);
+
+          newLine.draw(ctx);
+        }
+      }
+
+      function clickHandler(e) {
+        if (isCursorInsideCanvas(c, e)) {
+          if (typeof fromXY.x === "undefined") {
+            fromXY.x = e.clientX;
+            fromXY.y = e.clientY;
+          } else {
+            saveFinishedLine();
+            saveIntersections();
+
+            clear();
+            reset();
+          }
+        }
+      }
+
+      function isCursorInsideCanvas(canvas, event) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        // console.log("x: " + x + " y: " + y)
+        return x < 250 && y < 250;
+      }
+
+      function drawLine(x1, y1, x2, y2, ratio) {
+        ctx2.clearRect(0, 0, 300, 300);
+
+        ctx2.beginPath();
+
+        // var prevx1 = x1
+        // var prevy1 = y1
+
+        //x1 = x2 - ratio * (x2+x1);
+        //y1 = y2 - ratio * (y2+y1);
+
+        ctx2.moveTo(x1, y1);
+        x2 = x1 + ratio * (x2 - x1);
+        y2 = y1 + ratio * (y2 - y1);
+
+        ctx2.lineTo(x2, y2);
+        ctx2.stroke();
+        ctx2.closePath();
+      }
+
+      function animate(ratio) {
+        ratio = ratio || 1;
+
+        for (var i = 0; i < linesArray.length; i++) {
+          linesArray[i].toX =
+            linesArray[i].fromX +
+            ratio * (linesArray[i].toX - linesArray[i].fromX);
+          linesArray[i].toY =
+            linesArray[i].fromY +
+            ratio * (linesArray[i].toY - linesArray[i].fromY);
+        }
+
+        ctx2.clearRect(0, 0, 300, 300);
+
+        for (var i = 0; i < linesArray.length; i++) {
+          ctx2.beginPath();
+          ctx2.moveTo(linesArray[i].fromX, linesArray[i].fromY);
+          ctx2.lineTo(linesArray[i].toX, linesArray[i].toY);
+          ctx2.strokeStyle = "black";
+          ctx2.stroke();
+          ctx2.closePath();
+
+          /* drawLine(linesArray[i].fromX,
+    	               linesArray[i].fromY,
+    	               linesArray[i].toX,
+    	               linesArray[i].toY,
+    	               ratio); */
+        }
+
+        if (ratio > 0) {
+          requestAnimationFrame(function () {
+            animate(ratio - 0.01);
+          });
+        } else {
+          linesArray = [];
+          intersectionsArray = [];
+          ctx2.clearRect(0, 0, 300, 300);
+        }
+      }
+
+      function abortHandler(e) {
+        clear();
+        reset();
+      }
+    </script>
+  </body>
+</html>
